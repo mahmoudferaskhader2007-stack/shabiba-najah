@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><title>أعضاء الشبيبة 🔒</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="passScreen" class="container" style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+    <div class="glass" style="text-align:center; width:100%; max-width:400px;">
+        <h3 style="color:var(--primary); margin-bottom:20px;">بوابة الكادر الداخلي</h3>
+        <input type="password" id="mPass" placeholder="أدخل الرمز السري">
+        <button onclick="checkPass()" class="btn-primary">دخول</button>
+        <button onclick="location.href='dashboard.html'" style="background:none; border:none; color:#fff; margin-top:15px; cursor:pointer; width:100%;">رجوع للداشبورد</button>
+    </div>
+</div>
+
+<div id="memberContent" class="container" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+        <h2 style="color:var(--primary);">إعلانات الكادر الداخلي</h2>
+        <button onclick="location.href='dashboard.html'" class="btn-primary" style="width:auto;">العودة</button>
+    </div>
+    <div id="shGrid" class="grid"></div>
+</div>
+<footer>Developed by Mahmoud ALKhader</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAcTbpIdlLR6xmqlWymsDB5ckztECM3f1E",
+      authDomain: "shabiba-najah.firebaseapp.com",
+      databaseURL: "https://shabiba-najah-default-rtdb.firebaseio.com",
+      projectId: "shabiba-najah",
+      storageBucket: "shabiba-najah.firebasestorage.app",
+      messagingSenderId: "810571334841",
+      appId: "1:810571334841:web:6068ab0b626d1bf6bf8768"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function checkPass() {
+        if(document.getElementById("mPass").value === "1965") {
+            document.getElementById("passScreen").style.display = "none";
+            document.getElementById("memberContent").style.display = "block";
+            loadSecretAds();
+        } else { alert("رمز الدخول غير صحيح!"); }
+    }
+
+    function loadSecretAds() {
+        db.ref('member_ads').on('value', snap => {
+            const grid = document.getElementById("shGrid");
+            grid.innerHTML = "";
+            if(!snap.exists()) { grid.innerHTML = "<p>لا يوجد إعلانات للأعضاء حالياً.</p>"; return; }
+            snap.forEach(child => {
+                const data = child.val();
+                grid.innerHTML += `
+                    <div class="card">
+                        <h4 style="color:var(--primary);">${data.title}</h4>
+                        <p>${data.text}</p>
+                    </div>`;
+            });
+        });
+    }
+</script>
+</body>
+</html>

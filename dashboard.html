@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الداشبورد | منصة الشبيبة</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 id="welcomeMsg" style="color:var(--primary);">أهلاً بك</h2>
+        <div style="display:flex; gap:10px;">
+            <button onclick="location.href='shabiba-members.html'" class="btn-primary" style="background:red; color:white; width:auto;">أعضاء الشبيبة 🔒</button>
+            <button onclick="localStorage.clear(); location.href='index.html'" class="btn-primary" style="background:none; border:1px solid var(--primary); color:var(--primary); width:auto;">خروج</button>
+        </div>
+    </header>
+
+    <div style="display:flex; gap:10px; overflow-x:auto; padding-bottom:10px; margin-bottom:20px;">
+        <button class="btn-primary" onclick="showContent('courses', 'all')" style="width:auto;">الكل</button>
+        <button class="btn-primary" onclick="showContent('courses', 'جامعة')" style="width:auto;">إجباري جامعة</button>
+        <button class="btn-primary" onclick="showContent('courses', 'تخصص')" style="width:auto;">إجباري تخصص</button>
+        <button class="btn-primary" onclick="showContent('courses', 'اختياري')" style="width:auto;">اختياري تخصص</button>
+        <button class="btn-primary" onclick="showContent('ads', '')" style="width:auto; background:#444; color:#fff;">إعلانات الكلية</button>
+    </div>
+
+    <div id="mainGrid" class="grid"></div>
+</div>
+
+<div id="bot-launcher" onclick="toggleBot()" style="position:fixed; bottom:80px; left:20px; background:var(--primary); width:60px; height:60px; border-radius:50%; display:flex; justify-content:center; align-items:center; cursor:pointer; font-size:24px; z-index:1000;">🤖</div>
+<div id="bot-window" class="glass" style="display:none; position:fixed; bottom:150px; left:20px; width:320px; height:400px; z-index:1000; flex-direction:column; padding:0; overflow:hidden;">
+    <div style="background:var(--primary); color:#000; padding:15px; font-weight:bold;">مساعد الشبيبة</div>
+    <div id="bot-msgs" style="flex:1; padding:15px; overflow-y:auto; background:rgba(0,0,0,0.9); font-size:14px;"></div>
+    <div style="display:flex; padding:10px; background:#111;">
+        <input type="text" id="bot-input" placeholder="اسأل هنا..." style="margin:0; padding:8px;">
+        <button onclick="botAsk()" class="btn-primary" style="margin-right:5px; padding:8px; width:auto;">إرسال</button>
+    </div>
+</div>
+
+<footer>Developed by Mahmoud ALKhader</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAcTbpIdlLR6xmqlWymsDB5ckztECM3f1E",
+      authDomain: "shabiba-najah.firebaseapp.com",
+      databaseURL: "https://shabiba-najah-default-rtdb.firebaseio.com",
+      projectId: "shabiba-najah",
+      storageBucket: "shabiba-najah.firebasestorage.app",
+      messagingSenderId: "810571334841",
+      appId: "1:810571334841:web:6068ab0b626d1bf6bf8768"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    if(localStorage.getItem("logged") !== "yes") window.location.replace("index.html");
+    document.getElementById("welcomeMsg").innerText = "أهلاً، " + localStorage.getItem("userName");
+
+    function showContent(type, filter) {
+        const grid = document.getElementById("mainGrid");
+        grid.classList.remove("has-active");
+        grid.innerHTML = "<h3 style='text-align:center; grid-column:1/-1;'>جاري التحميل...</h3>";
+
+        db.ref(type === 'courses' ? 'courses' : 'announcements').on('value', snap => {
+            grid.innerHTML = "";
+            if(!snap.exists()) { grid.innerHTML = "<p style='text-align:center; grid-column:1/-1;'>لا يوجد بيانات حالياً.</p>"; return; }
+            
+            snap.forEach(child => {
+                const data = child.val();
+                if(type === 'courses') {
+                    if(filter !== 'all' && data.category !== filter) return;
+                    grid.innerHTML += `
+                        <div class="card" onclick="toggleCard(this)">
+                            <h3 style="color:var(--primary);">${data.title}</h3>
+                            <p style="font-size:12px; opacity:0.7;">${data.category} | ${data.branch || 'عام'}</p>
+                            <div class="details">
+                                <a href="${data.file1 || '#'}" target="_blank" style="display:block; color:#fff; padding:10px; background:#222; margin-top:5px; border-radius:5px; text-decoration:none;">📄 ملخص المادة</a>
+                                <a href="${data.file2 || '#'}" target="_blank" style="display:block; color:#fff; padding:10px; background:#222; margin-top:5px; border-radius:5px; text-decoration:none;">📝 امتحانات سابقة</a>
+                                <a href="${data.file3 || '#'}" target="_blank" style="display:block; color:#fff; padding:10px; background:#222; margin-top:5px; border-radius:5px; text-decoration:none;">📚 الكتاب المقرر</a>
+                            </div>
+                        </div>`;
+                } else {
+                    const imgHtml = data.img ? `<img src="${data.img}" style="width:100%; border-radius:10px; margin-bottom:10px; border:1px solid #333;">` : "";
+                    grid.innerHTML += `
+                        <div class="card" style="cursor:default;">
+                            ${imgHtml}
+                            <h4 style="color:var(--primary);">${data.title}</h4>
+                            <p style="font-size:14px; opacity:0.8;">${data.text}</p>
+                        </div>`;
+                }
+            });
+        });
+    }
+
+    function toggleCard(el) {
+        const grid = document.getElementById("mainGrid");
+        const isActive = el.classList.contains('active');
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        if(!isActive) { el.classList.add('active'); grid.classList.add('has-active'); } 
+        else { grid.classList.remove('has-active'); }
+    }
+
+    function botAsk() {
+        const input = document.getElementById("bot-input");
+        const msgs = document.getElementById("bot-msgs");
+        if(!input.value.trim()) return;
+        msgs.innerHTML += `<div style="color:var(--primary); margin-bottom:10px;">أنت: ${input.value}</div>`;
+        let reply = "أنا هنا لمساعدتك، اسال عن (المواد) أو (الشبيبة).";
+        if(input.value.includes("مواد")) reply = "يمكنك العثور على المواد في التبويبات المخصصة... اذكر اسم المادة فقط.";
+        if(input.value.includes("شبيبة")) reply = "حركة الشبيبة الطلابية هي العمود الفقري لجامعة النجاح وتاريخها عريق في خدمة الطلبة.";
+        setTimeout(() => {
+            msgs.innerHTML += `<div style="color:#fff; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:5px;">البوت: ${reply}</div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        }, 500);
+        input.value = "";
+    }
+    function toggleBot() { const w = document.getElementById("bot-window"); w.style.display = w.style.display === "none" ? "flex" : "none"; }
+    showContent('courses', 'all');
+</script>
+</body>
+</html>

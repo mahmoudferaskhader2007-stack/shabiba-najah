@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><title>إدارة المحتوى</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <button onclick="location.href='admin.html'" class="btn-primary" style="margin-bottom:20px; width:auto;">العودة لقائمة الطلاب</button>
+    
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
+        <div class="glass">
+            <h3 style="color:var(--primary);">إضافة مساق (الاسم فقط إجباري)</h3>
+            <input type="text" id="cTitle" placeholder="اسم المساق *">
+            <select id="cCat"><option value="جامعة">إجباري جامعة</option><option value="تخصص">إجباري تخصص</option><option value="اختياري">اختياري تخصص</option></select>
+            <input type="text" id="cBranch" placeholder="الفرع (اختياري)">
+            <input type="text" id="f1" placeholder="رابط ملخص المادة (اختياري)">
+            <input type="text" id="f2" placeholder="رابط امتحانات سابقة (اختياري)">
+            <input type="text" id="f3" placeholder="رابط الكتاب المقرر (اختياري)">
+            <button onclick="addCourse()" class="btn-primary">حفظ ونشر المساق</button>
+            <div id="cList" style="margin-top:20px; max-height:200px; overflow:auto;"></div>
+        </div>
+
+        <div class="glass">
+            <h3 style="color:var(--primary);">إدارة الإعلانات (صورة اختيارية)</h3>
+            <input type="text" id="aTitle" placeholder="عنوان الإعلان">
+            <textarea id="aText" placeholder="نص الإعلان"></textarea>
+            <input type="text" id="aImg" placeholder="رابط صورة للإعلان (اختياري)">
+            <div style="display:flex; gap:10px;">
+                <button onclick="addAd('announcements')" class="btn-primary">نشر للكلية</button>
+                <button onclick="addAd('member_ads')" class="btn-primary" style="background:#444; color:#fff;">نشر للأعضاء (سري)</button>
+            </div>
+            <div id="aList" style="margin-top:20px; max-height:200px; overflow:auto;"></div>
+            <div id="mList" style="margin-top:10px; max-height:200px; overflow:auto;"></div>
+        </div>
+    </div>
+</div>
+<footer>Developed by Mahmoud ALKhader</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script>
+    if(sessionStorage.getItem("isAdmin") !== "yes") window.location.replace("index.html");
+    const firebaseConfig = {
+      apiKey: "AIzaSyAcTbpIdlLR6xmqlWymsDB5ckztECM3f1E",
+      authDomain: "shabiba-najah.firebaseapp.com",
+      databaseURL: "https://shabiba-najah-default-rtdb.firebaseio.com",
+      projectId: "shabiba-najah",
+      storageBucket: "shabiba-najah.firebasestorage.app",
+      messagingSenderId: "810571334841",
+      appId: "1:810571334841:web:6068ab0b626d1bf6bf8768"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function addCourse() {
+        const title = document.getElementById("cTitle").value;
+        if(!title) return alert("الاسم مطلوب!");
+        db.ref('courses').push({
+            title, category: document.getElementById("cCat").value, branch: document.getElementById("cBranch").value,
+            file1: document.getElementById("f1").value, file2: document.getElementById("f2").value, file3: document.getElementById("f3").value
+        }).then(() => { alert("تمت إضافة المساق!"); document.getElementById("cTitle").value = ""; });
+    }
+
+    function addAd(path) {
+        db.ref(path).once('value', snap => {
+            if(snap.numChildren() >= 10) return alert("الحد الأقصى 10 إعلانات!");
+            const title = document.getElementById("aTitle").value;
+            const text = document.getElementById("aText").value;
+            const img = document.getElementById("aImg").value;
+            if(!title || !text) return alert("أكمل البيانات!");
+            db.ref(path).push({ title, text, img: img || "" }).then(() => { alert("تم النشر!"); document.getElementById("aTitle").value = ""; document.getElementById("aText").value = ""; document.getElementById("aImg").value = ""; });
+        });
+    }
+
+    db.ref('courses').on('value', snap => {
+        let h = "<h4>المساقات:</h4>"; snap.forEach(c => { h += `<div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; display:flex; justify-content:space-between;"><span>${c.val().title}</span><button onclick="db.ref('courses/${c.key}').remove()" style="color:red; background:none; border:none;">حذف</button></div>`; });
+        document.getElementById("cList").innerHTML = h;
+    });
+    db.ref('announcements').on('value', snap => {
+        let h = "<h4>إعلانات الكلية:</h4>"; snap.forEach(c => { h += `<div style="background:rgba(255,255,255,0.05); padding:8px; margin-bottom:5px; display:flex; justify-content:space-between;"><span>${c.val().title}</span><button onclick="db.ref('announcements/${c.key}').remove()" style="color:red; background:none; border:none;">حذف</button></div>`; });
+        document.getElementById("aList").innerHTML = h;
+    });
+    db.ref('member_ads').on('value', snap => {
+        let h = "<h4 style='color:red;'>إعلانات الكادر:</h4>"; snap.forEach(c => { h += `<div style="background:rgba(255,255,255,0.05); border-right:3px solid red; padding:8px; margin-bottom:5px; display:flex; justify-content:space-between;"><span>${c.val().title}</span><button onclick="db.ref('member_ads/${c.key}').remove()" style="color:red; background:none; border:none;">حذف</button></div>`; });
+        document.getElementById("mList").innerHTML = h;
+    });
+</script>
+</body>
+</html>

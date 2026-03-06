@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8"><title>لوحة الإدارة | الطلاب</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+        <h2 style="color:var(--primary);">إدارة الطلاب المسجلين</h2>
+        <div>
+            <button onclick="location.href='courses-admin.html'" class="btn-primary" style="background:#fff; color:#000; width:auto;">إدارة المحتوى والإعلانات</button>
+            <button onclick="sessionStorage.clear(); window.location.replace('index.html')" class="btn-primary" style="background:red; color:#fff; width:auto; margin-right:10px;">خروج</button>
+        </div>
+    </div>
+
+    <div class="glass" style="margin-bottom:20px; display:flex; justify-content:space-around;">
+        <span>الطلاب المسجلين رسمياً: <span id="count" style="color:var(--primary); font-size:1.5rem;">0</span></span>
+        <span>المشرف الحالي: <span id="adm" style="color:var(--primary);"></span></span>
+    </div>
+
+    <div class="glass" style="overflow-x:auto;">
+        <table>
+            <thead><tr><th>الاسم</th><th>البريد</th><th>العمر</th><th>الزيارات</th><th>آخر دخول</th><th>إجراء</th></tr></thead>
+            <tbody id="sTable"></tbody>
+        </table>
+    </div>
+</div>
+<footer>Developed by Mahmoud ALKhader</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+<script>
+    if(sessionStorage.getItem("isAdmin") !== "yes") window.location.replace("index.html");
+    document.getElementById("adm").innerText = sessionStorage.getItem("adminName");
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyAcTbpIdlLR6xmqlWymsDB5ckztECM3f1E",
+      authDomain: "shabiba-najah.firebaseapp.com",
+      databaseURL: "https://shabiba-najah-default-rtdb.firebaseio.com",
+      projectId: "shabiba-najah",
+      storageBucket: "shabiba-najah.firebasestorage.app",
+      messagingSenderId: "810571334841",
+      appId: "1:810571334841:web:6068ab0b626d1bf6bf8768"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    db.ref('students').on('value', snap => {
+        const table = document.getElementById("sTable");
+        let count = 0; table.innerHTML = "";
+        snap.forEach(child => {
+            const data = child.val();
+            count++;
+            table.innerHTML += `<tr>
+                <td style="color:var(--primary); font-weight:bold;">${data.name}</td>
+                <td>${data.email}</td><td>${data.age}</td>
+                <td style="color:#00ff00; font-weight:bold;">${data.visits || 1}</td>
+                <td style="opacity:0.8; font-size:0.8rem;">${data.time}</td>
+                <td><button onclick="db.ref('students/${child.key}').remove()" style="background:red; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">حذف</button></td>
+            </tr>`;
+        });
+        document.getElementById("count").innerText = count;
+    });
+</script>
+</body>
+</html>
