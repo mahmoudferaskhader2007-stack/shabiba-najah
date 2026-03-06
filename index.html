@@ -3,95 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>دخول - منصة الشبيبة</title>
+    <title>مرحباً بكم - شبيبة النجاح</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <img src="najah-logo.png" style="position: absolute; top: 15px; right: 15px; width: 70px; opacity: 0.9; z-index: 10;">
-    
-    <div class="container" style="display:flex; justify-content:center; align-items:center; min-height:90vh;">
-        <div class="glass" style="width:100%; max-width:420px; text-align:center;">
-            <img src="shabiba.png" style="width:180px; margin-bottom:10px;">
-			
-            <h2 style="color:var(--primary); margin-bottom:20px;">منصة الشبيبة الطلابية</h2>
-            
-            <form id="studentForm">
-                <input type="text" id="sName" placeholder="الاسم الكامل" required>
-                <input type="email" id="sEmail" placeholder="البريد الجامعي (@stu.najah.edu)" required>
-                <input type="number" id="sAge" placeholder="العمر (يجب أن يكون 17+)" required>
-                <button type="submit" class="btn-primary">دخول الطلاب</button>
-            </form>
+<body class="bg">
 
-            <div style="margin-top:30px; border-top:1px solid #333; padding-top:20px;">
-                <h4 style="color:#888; margin-bottom:10px;">بوابة المشرفين</h4>
-                <input type="text" id="adminUser" placeholder="اسم المشرف">
-                <input type="password" id="adminPass" placeholder="كلمة المرور">
-                <button onclick="adminLogin()" class="btn-primary" style="background:transparent; color:var(--primary); border:1px solid var(--primary);">دخول الإدارة</button>
-            </div>
+<div class="container" style="display: flex; align-items: center; justify-content: center; min-height: 100vh;">
+    <div class="glass hero" style="text-align: center; max-width: 600px;">
+        <img src="shabiba-logo.png" alt="Logo" style="width: 550px; margin-bottom: 30px;"> <h1 style="font-size: 2.5rem; margin-bottom: 10px; color:var(--primary);">صوت الطالب.. وعي ونضال</h1>
+        <p style="font-size: 1.2rem; color: #ccc;">أهلاً بك في المنصة الرسمية لطلاب حركة الشبيبة الطلابية في جامعة النجاح الوطنية.</p>
+        
+        <div style="margin-top: 30px;">
+            <button class="btn-primary" onclick="goLogin()">ابدأ الآن</button>
+            <p style="font-size: 0.9rem; margin-top: 15px; opacity: 0.7;">سيتم تحويلك تلقائياً خلال 7 ثوانٍ...</p>
         </div>
     </div>
-    <footer>Developed by Mahmoud ALKhader</footer>
+</div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
-    <script>
-        const firebaseConfig = {
-          apiKey: "AIzaSyAcTbpIdlLR6xmqlWymsDB5ckztECM3f1E",
-          authDomain: "shabiba-najah.firebaseapp.com",
-          databaseURL: "https://shabiba-najah-default-rtdb.firebaseio.com",
-          projectId: "shabiba-najah",
-          storageBucket: "shabiba-najah.firebasestorage.app",
-          messagingSenderId: "810571334841",
-          appId: "1:810571334841:web:6068ab0b626d1bf6bf8768"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+<footer>Developed by Mahmoud ALKhader</footer>
 
-        if(localStorage.getItem("logged") === "yes") window.location.replace("dashboard.html");
+<script>
+  // نغير الوجهة إلى login.html بدلاً من index.html
+  function goLogin(){ location.href = "login.html"; }
+  
+  // انتقال تلقائي بعد 7 ثوانٍ
+  setTimeout(() => { 
+      // فحص إذا كان الطالب مسجلاً مسبقاً يذهب للداشبورد فوراً
+      if(localStorage.getItem("logged") === "yes") {
+          location.href = "dashboard.html";
+      } else {
+          location.href = "login.html"; 
+      }
+  }, 7000);
+</script>
 
-        document.getElementById("studentForm").onsubmit = function(e){
-            e.preventDefault();
-            const name = document.getElementById("sName").value;
-            const email = document.getElementById("sEmail").value;
-            const age = parseInt(document.getElementById("sAge").value);
-
-            if(!email.endsWith("@stu.najah.edu")) { alert("يجب استخدام البريد الجامعي"); return; }
-            if(age < 17) { alert("العمر يجب أن يكون 17 فما فوق"); return; }
-
-            const safeEmail = email.replace(/[\.\#\$\[\]]/g, '_'); 
-            
-            db.ref('students/' + safeEmail).once('value').then(snap => {
-                if(snap.exists()){
-                    let currentVisits = snap.val().visits || 1;
-                    db.ref('students/' + safeEmail).update({
-                        time: new Date().toLocaleString(),
-                        visits: currentVisits + 1
-                    }).then(() => loginSuccess(name));
-                } else {
-                    db.ref('students/' + safeEmail).set({
-                        name: name, email: email, age: age, time: new Date().toLocaleString(), visits: 1
-                    }).then(() => loginSuccess(name));
-                }
-            }).catch(err => alert("خطأ في الاتصال بالفايربيس"));
-        };
-
-        function loginSuccess(name) {
-            localStorage.setItem("logged", "yes");
-            localStorage.setItem("userName", name);
-            window.location.replace("dashboard.html");
-        }
-
-        function adminLogin() {
-            const allowed = ["محمود", "أحمد", "خضر", "Mahmoud"];
-            const user = document.getElementById("adminUser").value;
-            const pass = document.getElementById("adminPass").value;
-
-            if(allowed.includes(user) && pass === "200719") {
-                sessionStorage.setItem("isAdmin", "yes");
-                sessionStorage.setItem("adminName", user);
-                window.location.replace("admin.html");
-            } else { alert("بيانات المشرف غير صحيحة"); }
-        }
-    </script>
 </body>
 </html>
